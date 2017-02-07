@@ -2,7 +2,6 @@ package storage
 
 import (
 	"database/sql"
-	"os"
 
 	"github.com/kudinovdenis/csServer/logger"
 	"github.com/kudinovdenis/csServer/searchAPI"
@@ -13,13 +12,7 @@ import (
 var internalDB *sql.DB
 
 // InitDB ... initialize Database
-func InitDB(name string) {
-	mysqlIP := os.Getenv("MYSQL_IP_SERVER")
-	logger.Logf(logger.LogLevelDefault, "MYSQL_IP_SERVER variable is %s", mysqlIP)
-	if mysqlIP == "" {
-		logger.Log(logger.LogLevelError, "MYSQL_IP_SERVER variable is not set")
-		return
-	}
+func InitDB(name string, mysqlIP string) {
 	db, error := sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/")
 	if error != nil {
 		logger.Logf(logger.LogLevelError, "Cant create sql. %s", error.Error())

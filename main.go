@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,7 +91,10 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	logger.Log(logger.LogLevelDefault, "Starting...")
-	storage.InitDB("storage")
+	mysqlIP := flag.String("mysqlIP", "127.0.0.1", "pass an Mysql ip address")
+	flag.Parse()
+	logger.Logf(logger.LogLevelDefault, "Mysql server IP: %s", *mysqlIP)
+	storage.InitDB("storage", *mysqlIP)
 	// storage.FindTopTags(40)
 	http.HandleFunc("/uploadImage", receivePost)
 	error := http.ListenAndServe(":80", nil)
