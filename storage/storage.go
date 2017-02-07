@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"os"
 
 	"github.com/kudinovdenis/csServer/logger"
 	"github.com/kudinovdenis/csServer/searchAPI"
@@ -13,7 +14,13 @@ var internalDB *sql.DB
 
 // InitDB ... initialize Database
 func InitDB(name string) {
-	db, error := sql.Open("mysql", "root:bb5ih2xK3q@tcp(127.0.0.1:3306)/")
+	mysqlIP := os.Getenv("MYSQL_IP_SERVER")
+	logger.Logf(logger.LogLevelDefault, "MYSQL_IP_SERVER variable is %s", mysqlIP)
+	if mysqlIP == "" {
+		logger.Log(logger.LogLevelError, "MYSQL_IP_SERVER variable is not set")
+		return
+	}
+	db, error := sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/")
 	if error != nil {
 		logger.Logf(logger.LogLevelError, "Cant create sql. %s", error.Error())
 		return
@@ -33,7 +40,7 @@ func InitDB(name string) {
 		logger.Logf(logger.LogLevelError, "Cant Ping Close sql. %s", error.Error())
 		return
 	}
-	db, error = sql.Open("mysql", "root:bb5ih2xK3q@tcp(127.0.0.1:3306)/"+name)
+	db, error = sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/"+name)
 	if error != nil {
 		logger.Logf(logger.LogLevelError, "Cant use database storage. %s", error.Error())
 		return
