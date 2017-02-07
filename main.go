@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/kudinovdenis/main/logger"
-	"github.com/kudinovdenis/main/searchAPI"
-	"github.com/kudinovdenis/main/storage"
+	"github.com/kudinovdenis/csServer/logger"
+	"github.com/kudinovdenis/csServer/searchAPI"
+	"github.com/kudinovdenis/csServer/storage"
 )
 
 func receivePost(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +89,9 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	storage.InitDB("storage")
 	logger.Log(logger.LogLevelDefault, "Starting...")
+	storage.InitDB("storage")
+	// storage.FindTopTags(40)
 	http.HandleFunc("/uploadImage", receivePost)
 	error := http.ListenAndServe(":80", nil)
 	if error != nil {

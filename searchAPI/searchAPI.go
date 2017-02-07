@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kudinovdenis/main/logger"
+	"github.com/kudinovdenis/csServer/logger"
 )
 
 // SearchResponse ... search response

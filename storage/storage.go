@@ -3,8 +3,8 @@ package storage
 import (
 	"database/sql"
 
-	"github.com/kudinovdenis/main/logger"
-	"github.com/kudinovdenis/main/searchAPI"
+	"github.com/kudinovdenis/csServer/logger"
+	"github.com/kudinovdenis/csServer/searchAPI"
 	// mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )

@@ -1,0 +1,8 @@
+version: v1beta1
+containers:
+- name: server
+  image: adg1/server
+  ports:
+  - name: http
+    hostPort: 80
+    containerPort: 80
