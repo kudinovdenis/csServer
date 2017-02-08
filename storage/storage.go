@@ -20,29 +20,29 @@ func InitDB(name string) {
 		logger.Log(logger.LogLevelError, "MYSQL_IP_SERVER variable is not set")
 		return
 	}
-	db, error := sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/")
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create sql. %s", error.Error())
+	db, err := sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/")
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create sql. %s", err.Error())
 		return
 	}
-	error = db.Ping()
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant Ping sql. %s", error.Error())
+	err = db.Ping()
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant Ping sql. %s", err.Error())
 		return
 	}
-	_, error = db.Exec("CREATE DATABASE IF NOT EXISTS " + name)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create database %s. %s", name, error.Error())
+	_, err = db.Exec("CREATE DATABASE IF NOT EXISTS " + name)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create database %s. %s", name, err.Error())
 		return
 	}
-	error = db.Close()
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant Ping Close sql. %s", error.Error())
+	err = db.Close()
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant Ping Close sql. %s", err.Error())
 		return
 	}
-	db, error = sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/"+name)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant use database storage. %s", error.Error())
+	db, err = sql.Open("mysql", "root:bb5ih2xK3q@tcp("+mysqlIP+":3306)/"+name)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant use database storage. %s", err.Error())
 		return
 	}
 	internalDB = db
@@ -50,7 +50,7 @@ func InitDB(name string) {
 }
 
 func createTables() {
-	_, error := internalDB.Exec(`
+	_, err := internalDB.Exec(`
 	CREATE TABLE Photos
 	(
 		id INT NOT NULL AUTO_INCREMENT,
@@ -58,22 +58,22 @@ func createTables() {
 		assetID VARCHAR(100) NOT NULL,
 		localURL VARCHAR(100) NOT NULL
 	)`)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create table photos. %s", error.Error())
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create table photos. %s", err.Error())
 	}
 
-	_, error = internalDB.Exec(`
+	_, err = internalDB.Exec(`
 	CREATE TABLE Tags
 	(
 		id INT NOT NULL AUTO_INCREMENT,
 		PRIMARY KEY (id),
 		name VARCHAR(255) NOT NULL
 	)`)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create table tags. %s", error.Error())
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create table tags. %s", err.Error())
 	}
 
-	_, error = internalDB.Exec(`
+	_, err = internalDB.Exec(`
 	CREATE TABLE Photos_Tags
 	(
 		photo_id INT NOT NULL,
@@ -82,8 +82,8 @@ func createTables() {
 		FOREIGN KEY (photo_id) REFERENCES Photos(id) ON UPDATE CASCADE,
 		FOREIGN KEY (tag_id) REFERENCES Tags(id) ON UPDATE CASCADE
 	)`)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create table tags. %s", error.Error())
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create table tags. %s", err.Error())
 	}
 }
 
@@ -100,18 +100,18 @@ func SavePhoto(assetID string, localURL string, tags []string) {
 	// make many to many relationships
 	for i := 0; i < len(tags); i++ {
 		tag := tags[i]
-		result, error := internalDB.Query("SELECT id FROM Tags WHERE name = ?", tag)
-		if error != nil {
-			logger.Logf(logger.LogLevelError, "Cant select tags. %s", error.Error())
+		result, err := internalDB.Query("SELECT id FROM Tags WHERE name = ?", tag)
+		if err != nil {
+			logger.Logf(logger.LogLevelError, "Cant select tags. %s", err.Error())
 		}
 		if result.Next() {
 			var tagID int64
 			result.Scan(&tagID)
 			logger.Logf(logger.LogLevelDefault, "MANY TO MANY: %d, %d", photoID, tagID)
-			_, error = internalDB.Exec(`
+			_, err = internalDB.Exec(`
 			INSERT INTO Photos_Tags (photo_id, tag_id) VALUES (?, ?)`, photoID, tagID)
-			if error != nil {
-				logger.Logf(logger.LogLevelError, "Cant save photo. %s", error.Error())
+			if err != nil {
+				logger.Logf(logger.LogLevelError, "Cant save photo. %s", err.Error())
 			}
 		}
 	}
@@ -123,9 +123,9 @@ func insertTags(tags []string) {
 	for i := 0; i < len(tags); i++ {
 		tag := tags[i]
 		if isTagExists(tag) == false {
-			_, error := internalDB.Exec("INSERT INTO Tags (name) VALUES (?);", tag)
-			if error != nil {
-				logger.Logf(logger.LogLevelError, "Cant insert tag: %s. %s", tag, error.Error())
+			_, err := internalDB.Exec("INSERT INTO Tags (name) VALUES (?);", tag)
+			if err != nil {
+				logger.Logf(logger.LogLevelError, "Cant insert tag: %s. %s", tag, err.Error())
 			} else {
 				logger.Logf(logger.LogLevelDefault, "Inserted tag tag: %s.", tag)
 			}
@@ -135,9 +135,9 @@ func insertTags(tags []string) {
 
 func isTagExists(tag string) bool {
 	logger.Logf(logger.LogLevelDefault, "Finding tag: %s", tag)
-	result, error := internalDB.Query("SELECT * FROM Tags WHERE name = ?", tag)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant start finding tag. %s", error.Error())
+	result, err := internalDB.Query("SELECT * FROM Tags WHERE name = ?", tag)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant start finding tag. %s", err.Error())
 		return false
 	}
 	if result.Next() {
@@ -153,14 +153,14 @@ func insertPhoto(assetID string, localURL string) int64 {
 	if IsPhotoExists(assetID) {
 		return iDForPhoto(assetID)
 	}
-	insertPhotoRes, error := internalDB.Exec("INSERT INTO Photos (assetID, localURL) VALUES (?, ?);", assetID, localURL)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant insert photo. %s", error.Error())
+	insertPhotoRes, err := internalDB.Exec("INSERT INTO Photos (assetID, localURL) VALUES (?, ?);", assetID, localURL)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant insert photo. %s", err.Error())
 		return -1
 	}
-	id, error := insertPhotoRes.LastInsertId()
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant save photo. %s", error.Error())
+	id, err := insertPhotoRes.LastInsertId()
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant save photo. %s", err.Error())
 		return -1
 	}
 	logger.Logf(logger.LogLevelDefault, "Photo %s inserted with id %d", assetID, id)
@@ -170,9 +170,9 @@ func insertPhoto(assetID string, localURL string) int64 {
 // IsPhotoExists ... check if photo exists
 func IsPhotoExists(assetID string) bool {
 	logger.Logf(logger.LogLevelDefault, "Finding Photo: %s", assetID)
-	result, error := internalDB.Query("SELECT * FROM Photos WHERE assetID = ?", assetID)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant start finding photo. %s", error.Error())
+	result, err := internalDB.Query("SELECT * FROM Photos WHERE assetID = ?", assetID)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant start finding photo. %s", err.Error())
 		return false
 	}
 	if result.Next() {
@@ -184,9 +184,9 @@ func IsPhotoExists(assetID string) bool {
 }
 
 func iDForPhoto(assetID string) int64 {
-	result, error := internalDB.Query("SELECT id FROM Photos WHERE assetID = ?", assetID)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Error in iDForPhoto: %s", error.Error())
+	result, err := internalDB.Query("SELECT id FROM Photos WHERE assetID = ?", assetID)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Error in iDForPhoto: %s", err.Error())
 		return -1
 	}
 	if result.Next() {
@@ -202,8 +202,8 @@ func TagsForPhoto(assetID string) []searchAPI.Tag {
 	logger.Logf(logger.LogLevelDefault, "Searching for tags for asset %s", assetID)
 	var tags []searchAPI.Tag
 	photoID := iDForPhoto(assetID)
-	result, error := internalDB.Query("SELECT tag_id FROM Photos_Tags WHERE photo_id = ?", photoID)
-	if error != nil {
+	result, err := internalDB.Query("SELECT tag_id FROM Photos_Tags WHERE photo_id = ?", photoID)
+	if err != nil {
 		logger.Logf(logger.LogLevelError, "Cannot retreive tags from photo %s", assetID)
 		return tags
 	}
@@ -219,8 +219,8 @@ func TagsForPhoto(assetID string) []searchAPI.Tag {
 func findTagByID(tagID int64) searchAPI.Tag {
 	logger.Logf(logger.LogLevelDefault, "Searching for tag with ID %d", tagID)
 	var tag searchAPI.Tag
-	result, error := internalDB.Query("SELECT name FROM Tags WHERE id = ?", tagID)
-	if error != nil {
+	result, err := internalDB.Query("SELECT name FROM Tags WHERE id = ?", tagID)
+	if err != nil {
 		logger.Logf(logger.LogLevelError, "Cant start finding tag with ID %d", tagID)
 	}
 	if result.Next() {

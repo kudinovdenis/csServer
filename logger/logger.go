@@ -47,9 +47,9 @@ func LogRequest(req *http.Request, logBody bool) {
 	}
 	message := fmt.Sprintf("Request started: %s [%s]: Headers: %s.", req.Method, req.URL.String(), headersString)
 	if logBody {
-		body, error := ioutil.ReadAll(req.Body)
-		if error != nil {
-			Logf(LogLevelError, "Cant parse response %s.", error.Error())
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			Logf(LogLevelError, "Cant parse response %s.", err.Error())
 		}
 		bodyString := string(body[:])
 		message += fmt.Sprintf(" Body: %s", bodyString)
