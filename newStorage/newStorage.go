@@ -75,9 +75,7 @@ func IsImageExists(assetID string) bool {
 func FindImageWithAssetID(assetID string) Image {
 	logger.Logf(logger.LogLevelDefault, "Getting image with ID %s", assetID)
 	var image Image
-	var tags []Tag
-	internalDB.Where("asset_id = ?", assetID).First(&image).Related(&tags, "Tags")
-	image.Tags = tags
+	internalDB.Where("asset_id = ?", assetID).Preload("Tags").First(&image)
 	logger.Logf(logger.LogLevelDefault, "Found image with ID %s: %v", assetID, image)
 	return image
 }
