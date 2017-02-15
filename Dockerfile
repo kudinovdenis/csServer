@@ -9,6 +9,7 @@ ADD . /go/src/github.com/kudinovdenis/csServer/
 # (You may fetch or manage dependencies here,
 # either manually or with a tool like "godep".)
 RUN go get github.com/go-sql-driver/mysql/
+RUN go get github.com/jinzhu/gorm/
 RUN go install github.com/kudinovdenis/csServer/
 
 # Run the csServer command by default when the container starts.
