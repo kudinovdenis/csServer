@@ -32,10 +32,9 @@ type Tag struct {
 }
 
 // InfoForPhoto ... Function assume that photo is already stored in PATH:
-func InfoForPhoto(assetID string) SearchResponse {
+func InfoForPhoto(localURL string) SearchResponse {
 	logger.Log(logger.LogLevelDefault, "Start microsoft api request")
 	client := http.Client{}
-	localURL := "~/tmp/images/" + assetID
 	//
 	file, err := os.Open(localURL)
 	if err != nil {

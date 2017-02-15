@@ -19,7 +19,7 @@ type Tag struct {
 // Image ... image
 type Image struct {
 	ID        uint `gorm:"primary_key"`
-	AssetID  string
+	Hash  string
 	LocalURL string
 	Tags     []Tag `gorm:"many2many:image_tags;"`
 }
@@ -61,32 +61,32 @@ func InitDB(name string) {
 }
 
 // IsImageExists ... check if image is already processed
-func IsImageExists(assetID string) bool {
-	logger.Logf(logger.LogLevelDefault, "Checking if image %s exists", assetID)
-	if FindImageWithAssetID(assetID).AssetID == "" {
-		logger.Logf(logger.LogLevelDefault, "Image %s is not exists", assetID)
+func IsImageExists(hash string) bool {
+	logger.Logf(logger.LogLevelDefault, "Checking if image %s exists", hash)
+	if FindImageWithAssetID(hash).Hash == "" {
+		logger.Logf(logger.LogLevelDefault, "Image %s is not exists", hash)
 		return false
 	}
-	logger.Logf(logger.LogLevelDefault, "Image %s is exists", assetID)
+	logger.Logf(logger.LogLevelDefault, "Image %s is exists", hash)
 	return true
 }
 
-// FindImageWithAssetID ... find image with asset id
-func FindImageWithAssetID(assetID string) Image {
-	logger.Logf(logger.LogLevelDefault, "Getting image with ID %s", assetID)
+// FindImageWithAssetID ... find image with hash
+func FindImageWithAssetID(hash string) Image {
+	logger.Logf(logger.LogLevelDefault, "Getting image with ID %s", hash)
 	var image Image
-	internalDB.Where("asset_id = ?", assetID).Preload("Tags").First(&image)
-	logger.Logf(logger.LogLevelDefault, "Found image with ID %s: %v", assetID, image)
+	internalDB.Where("hash = ?", hash).Preload("Tags").First(&image)
+	logger.Logf(logger.LogLevelDefault, "Found image with ID %s: %v", hash, image)
 	return image
 }
 
-func FindTagsForImage(assetID string) []Tag {
-	logger.Logf(logger.LogLevelDefault, "Finding tags for image with ID %s", assetID)
+func FindTagsForImage(hash string) []Tag {
+	logger.Logf(logger.LogLevelDefault, "Finding tags for image with ID %s", hash)
 	var tags []Tag
-	if IsImageExists(assetID) {
-		tags = FindImageWithAssetID(assetID).Tags
+	if IsImageExists(hash) {
+		tags = FindImageWithAssetID(hash).Tags
 	}
-	logger.Logf(logger.LogLevelDefault, "Found tags for image with ID %s: %+v", assetID, tags)
+	logger.Logf(logger.LogLevelDefault, "Found tags for image with ID %s: %+v", hash, tags)
 	return tags
 }
 
@@ -109,10 +109,10 @@ func SaveTags(tagsIN []searchAPI.Tag) []Tag {
 }
 
 // SaveImage ... add photo and tags to MySQL
-func SaveImage(assetID string, localURL string, tags []Tag) {
-	logger.Logf(logger.LogLevelDefault, "Saving image %s", assetID)
-	image := Image{AssetID: assetID, LocalURL: localURL}
-	if IsImageExists(assetID) {
+func SaveImage(hash string, localURL string, tags []Tag) {
+	logger.Logf(logger.LogLevelDefault, "Saving image %s", hash)
+	image := Image{Hash: hash, LocalURL: localURL}
+	if IsImageExists(hash) {
 		internalDB.Create(&image)
 		logger.Logf(logger.LogLevelDefault, "Created image %+v", image)
 	} else {
@@ -130,7 +130,7 @@ func SaveImage(assetID string, localURL string, tags []Tag) {
 			internalDB.Save(&tag)
 			logger.Logf(logger.LogLevelDefault, "Tag updated %+v", tag)
 		}
-		logger.Logf(logger.LogLevelDefault, "Linking tags %+v to image %s", tags, assetID)
+		logger.Logf(logger.LogLevelDefault, "Linking tags %+v to image %s", tags, hash)
 		image.Tags = append(image.Tags, tag)
 	}
 	internalDB.Save(&image)
