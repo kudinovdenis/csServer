@@ -16,4 +16,4 @@ RUN go install github.com/kudinovdenis/csServer/
 ENTRYPOINT /go/bin/csServer
 
 # Document that the service listens on port 80
-EXPOSE 80
+EXPOSE 8080
