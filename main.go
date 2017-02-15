@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/kudinovdenis/csServer/logger"
+	"github.com/kudinovdenis/csServer/newStorage"
 	"github.com/kudinovdenis/csServer/searchAPI"
-	"github.com/kudinovdenis/csServer/storage"
 )
 
 func receivePost(w http.ResponseWriter, r *http.Request) {
@@ -17,48 +17,49 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 		logger.Log(logger.LogLevelDefault, "URL not support method")
 		return
 	}
-	error := r.ParseForm()
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "%s", error.Error())
+	err := r.ParseForm()
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "%s", err.Error())
 		return
 	}
-	error = r.ParseMultipartForm(1024)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "%s", error.Error())
+	err = r.ParseMultipartForm(1024)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "%s", err.Error())
 		return
 	}
 	assetID := r.Form.Get("assetID")
 
-	file, header, error := r.FormFile("photo")
+	file, header, err := r.FormFile("photo")
 	defer file.Close()
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "%s", error.Error())
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "%s", err.Error())
 		return
 	}
 	logger.Logf(logger.LogLevelDefault, "Uploading file: %s", header.Filename)
 
 	// Saving photo
-	error = os.Mkdir("/tmp/images", os.ModePerm)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Directory is already exists %s", error.Error())
+	err = os.MkdirAll("~/tmp/images", os.ModePerm)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Directory is already exists %s", err.Error())
 	}
-	fileURL := "/tmp/images/" + assetID
-	out, error := os.Create(fileURL)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant create file %s", error.Error())
+	fileURL := "~/tmp/images/" + assetID
+	out, err := os.Create(fileURL)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create file %s", err.Error())
 		return
 	}
 	defer out.Close()
-	_, error = io.Copy(out, file)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant copy file %s", error.Error())
+	_, err = io.Copy(out, file)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant copy file %s", err.Error())
 		return
 	}
 
-	if storage.IsPhotoExists(assetID) {
-		bytes, parseError := json.Marshal(storage.TagsForPhoto(assetID))
+	if newStorage.IsImageExists(assetID) {
+		tags := newStorage.FindTagsForImage(assetID)
+		bytes, parseError := json.Marshal(tags)
 		if parseError != nil {
-			logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", error.Error())
+			logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
 			return
 		}
 		w.Write(bytes)
@@ -67,35 +68,32 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 
 	// start searching
 	info := searchAPI.InfoForPhoto(assetID)
-	bytes, error := json.Marshal(info)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", error.Error())
+	bytes, err := json.Marshal(info)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
 		return
 	}
 	logger.Logf(logger.LogLevelDefault, "info: %s", string(bytes))
 
-	bytes, error = json.Marshal(info.Tags)
-	if error != nil {
-		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", error.Error())
+	bytes, err = json.Marshal(info.Tags)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
 		return
 	}
-	tags := []string{}
-	for i := 0; i < len(info.Tags); i++ {
-		tag := info.Tags[i].Name
-		tags = append(tags, tag)
-	}
-	storage.SavePhoto(assetID, fileURL, tags)
+	tags := newStorage.SaveTags(info.Tags)
+	newStorage.SaveImage(assetID, fileURL, tags)
 	w.Write(bytes)
 }
 
 func main() {
 	logger.Log(logger.LogLevelDefault, "Starting...")
-	storage.InitDB("storage")
+	newStorage.InitDB("storage")
+	// storage.InitDB("storage")
 	// storage.FindTopTags(40)
 	http.HandleFunc("/uploadImage", receivePost)
-	error := http.ListenAndServe(":80", nil)
-	if error != nil {
-		fmt.Printf("%s", error.Error())
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		fmt.Printf("%s", err.Error())
 		return
 	}
 }
