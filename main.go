@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"os"
 
+	"crypto/md5"
+	"io/ioutil"
+
 	"github.com/kudinovdenis/csServer/logger"
 	"github.com/kudinovdenis/csServer/newStorage"
 	"github.com/kudinovdenis/csServer/searchAPI"
 	"github.com/nu7hatch/gouuid"
-	"crypto/md5"
-	"io/ioutil"
 	//"encoding/hex"
 	"encoding/hex"
 )
@@ -117,12 +118,18 @@ func md5FromFile(filePath string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
+func processSearchRequest(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	searchAPI.SendQueryToLUIS(query)
+}
+
 func main() {
 	logger.Log(logger.LogLevelDefault, "Starting...")
 	newStorage.InitDB("storage")
 	// storage.InitDB("storage")
 	// storage.FindTopTags(40)
 	http.HandleFunc("/uploadImage", receivePost)
+	http.HandleFunc("/search", processSearchRequest)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Printf("%s", err.Error())

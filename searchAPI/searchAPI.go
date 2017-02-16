@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/kudinovdenis/csServer/logger"
+	"net/url"
 )
 
 // SearchResponse ... search response
@@ -80,6 +81,35 @@ func InfoForPhoto(localURL string) SearchResponse {
 	logger.LogResponse(*response, responseBody)
 	info := parseResponse(responseBody)
 	return info
+}
+
+func SendQueryToLUIS(query string) {
+	client := http.Client{}
+	logger.Logf(logger.LogLevelDefault, "Searching query: %s", query)
+	Url, _ := url.Parse("https://westus.api.cognitive.microsoft.com/")
+	Url.Path += "luis/v2.0/apps/3ab21cf2-41d0-431b-8b61-8b19e22147cb"
+	parameters := url.Values{}
+	parameters.Add("subscription-key", "484db11ab72b441682410b4a3abdf725")
+	parameters.Add("q", query)
+	Url.RawQuery = parameters.Encode()
+	request, err := http.NewRequest("GET", Url.String(), nil)
+
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant create request. %", err.Error())
+	}
+	logger.LogRequest(request, false)
+
+	response, err := client.Do(request)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant do request. %s", err.Error())
+	}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant parse response %s.", err.Error())
+	}
+
+	logger.LogResponse(*response, responseBody)
 }
 
 func parseResponse(response []byte) SearchResponse {
