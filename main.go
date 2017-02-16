@@ -10,6 +10,11 @@ import (
 	"github.com/kudinovdenis/csServer/logger"
 	"github.com/kudinovdenis/csServer/newStorage"
 	"github.com/kudinovdenis/csServer/searchAPI"
+	"github.com/nu7hatch/gouuid"
+	"crypto/md5"
+	"io/ioutil"
+	//"encoding/hex"
+	"encoding/hex"
 )
 
 func receivePost(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +32,6 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 		logger.Logf(logger.LogLevelError, "%s", err.Error())
 		return
 	}
-	assetID := r.Form.Get("assetID")
 
 	file, header, err := r.FormFile("photo")
 	defer file.Close()
@@ -36,27 +40,31 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Logf(logger.LogLevelDefault, "Uploading file: %s", header.Filename)
+	filename := generateRandomFilename()
 
 	// Saving photo
 	err = os.MkdirAll("~/tmp/images", os.ModePerm)
 	if err != nil {
-		logger.Logf(logger.LogLevelError, "Directory is already exists %s", err.Error())
+		logger.Logf(logger.LogLevelError, "Cant create directory. %s", err.Error())
 	}
-	fileURL := "~/tmp/images/" + assetID
+	fileURL := "~/tmp/images/" + filename
 	out, err := os.Create(fileURL)
 	if err != nil {
 		logger.Logf(logger.LogLevelError, "Cant create file %s", err.Error())
 		return
 	}
 	defer out.Close()
+
 	_, err = io.Copy(out, file)
 	if err != nil {
 		logger.Logf(logger.LogLevelError, "Cant copy file %s", err.Error())
 		return
 	}
 
-	if newStorage.IsImageExists(assetID) {
-		tags := newStorage.FindTagsForImage(assetID)
+	fileMD5 := md5FromFile(fileURL)
+
+	if newStorage.IsImageExists(fileMD5) {
+		tags := newStorage.FindTagsForImage(fileMD5)
 		bytes, parseError := json.Marshal(tags)
 		if parseError != nil {
 			logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
@@ -67,7 +75,7 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// start searching
-	info := searchAPI.InfoForPhoto(assetID)
+	info := searchAPI.InfoForPhoto(fileURL)
 	bytes, err := json.Marshal(info)
 	if err != nil {
 		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
@@ -81,8 +89,32 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tags := newStorage.SaveTags(info.Tags)
-	newStorage.SaveImage(assetID, fileURL, tags)
+	newStorage.SaveImage(fileMD5, fileURL, tags)
+	foundTags := newStorage.FindTagsForImage(fileMD5)
+	bytes, parseError := json.Marshal(foundTags)
+	if parseError != nil {
+		logger.Logf(logger.LogLevelError, "Cant marshal JSON %s", err.Error())
+		return
+	}
 	w.Write(bytes)
+}
+
+func generateRandomFilename() string {
+	id, err := uuid.NewV4()
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant generate UUID. %s", err.Error())
+	}
+	return id.String()
+}
+
+func md5FromFile(filePath string) string {
+	b, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		logger.Logf(logger.LogLevelError, "Cant read file %s. %s", filePath, err)
+	}
+	hasher := md5.New()
+	hasher.Write(b)
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func main() {
