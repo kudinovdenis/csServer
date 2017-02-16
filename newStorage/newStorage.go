@@ -135,3 +135,10 @@ func SaveImage(assetID string, localURL string, tags []Tag) {
 	}
 	internalDB.Save(&image)
 }
+
+//func SearchImagesWithTags(tags []string) {
+//	logger.Logf(logger.LogLevelDefault, "Searching for tags: %v", tags)
+//	for i:=0; i < len(tags); i++ {
+//		tag := tags[i]
+//	}
+//}

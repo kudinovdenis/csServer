@@ -85,12 +85,18 @@ func receivePost(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
+func processSearchRequest(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	searchAPI.SendQueryToLUIS(query)
+}
+
 func main() {
 	logger.Log(logger.LogLevelDefault, "Starting...")
 	newStorage.InitDB("storage")
 	// storage.InitDB("storage")
 	// storage.FindTopTags(40)
 	http.HandleFunc("/uploadImage", receivePost)
+	http.HandleFunc("/search", processSearchRequest)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		fmt.Printf("%s", err.Error())
